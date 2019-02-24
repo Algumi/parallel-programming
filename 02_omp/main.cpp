@@ -6,16 +6,24 @@ using namespace std;
 void integral(const double a, const double b, const double h, double *res)
 {
 	long long i, n;
-	double sum; // локальная переменная для подсчета интеграла
+	double sum1, sum2; // локальная переменная для подсчета интеграла
 	double x; // координата точки сетки
-	n = (long long)((b - a) / h); // количество точек сетки интегрирования
-	sum = 0.0;
-	for (i = 0; i < n; i++)
+	n = (long long)((b - a) / 2 / h); // количество точек сетки интегрирования
+	sum1 = 0.0;
+	sum2 = 0.0;
+#pragma omp parallel for private(x) reduction(+: sum1)
+	for (i = 1; i <= n; i++)
 	{
-		x = a + i * h + h / 2.0;
-		sum += x / (x * x * x * x + 1) * h;
+		x = a + (2 * i - 1) * h;
+		sum1 += x / (x * x * x * x + 1);
 	}
-	*res = sum;
+#pragma omp parallel for private(x) reduction(+: sum2)
+	for (i = 1; i < n; i++)
+	{
+		x = a + 2 * i * h;
+		sum2 += x / (x * x * x * x + 1);
+	}
+	*res = (h / 3) * (a / (a * a * a * a + 1) + (b / (b * b * b * b + 1)) + 4 * sum1 + 2 * sum2);
 }
 
 // Число pi
@@ -56,7 +64,7 @@ int main()
 	}
 	// вывод результатов эксперимента
 	cout << "execution time : " << avg_time / numbExp << "; " <<
-	min_time << "; " << max_time << endl;
+		min_time << "; " << max_time << endl;
 	cout.precision(8);
 	cout << "integral value : " << res << endl;
 	return 0;

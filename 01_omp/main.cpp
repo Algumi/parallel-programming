@@ -1,5 +1,6 @@
 #include <iostream>
-#include <time.h>	
+#include <time.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -10,6 +11,7 @@ void integral(const double a, const double b, const double h, double *res)
 	double x; // координата точки сетки
 	n = (long long)((b - a) / h); // количество точек сетки интегрирования
 	sum = 0.0;
+#pragma omp parallel for private(x) reduction(+: sum)
 	for (i = 0; i < n; i++)
 	{
 		x = a + i * h + h / 2.0;
@@ -56,7 +58,7 @@ int main()
 	}
 	// вывод результатов эксперимента
 	cout << "execution time : " << avg_time / numbExp << "; " <<
-	min_time << "; " << max_time << endl;
+		min_time << "; " << max_time << endl;
 	cout.precision(8);
 	cout << "integral value : " << res << endl;
 	return 0;
