@@ -1,6 +1,7 @@
 #include <iostream>
 #include <time.h>	
 #include <math.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -17,10 +18,11 @@ void integral(const double a1, const double b1, const double a2, const double b2
 	sum1 = 0.0;
 	sum2 = 0.0;
 	double precalc = (b1 - a1) * (b2 - a2);
-
-#pragma omp parallel for private(x, y, sum2) reduction(+: sum1)
+	omp_set_nested(1);
+//#pragma omp parallel for private(x, y, sum2) reduction(+: sum1)
 	for (i = 0; i < n; i++)
 	{
+		sum2 = 0;
 //#pragma omp parallel for private(x, y) reduction(+: sum2)
 		for (j = 0; j < m; j++)
 		{
@@ -29,7 +31,6 @@ void integral(const double a1, const double b1, const double a2, const double b2
 			sum2 += h1 * h2 * (exp(sin(PI * x) * cos(PI * y)) + 1) / precalc;
 		}
 		sum1 += sum2;
-		sum2 = 0;
 	}
 	*res = sum1;
 }
