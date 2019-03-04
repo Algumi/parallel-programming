@@ -1,6 +1,7 @@
 #include <iostream>
 #include <time.h>	
 #include <math.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -15,10 +16,11 @@ void integral(const double a1, const double b1, const double a2, const double b2
 	n = (long long)((b1 - a1) / h1); // количество точек сетки интегрирования по X
 	m = (long long)((b2 - a2) / h2); // количество точек сетки интегрирования по Y
 	double precalc = (b1 - a1) * (b2 - a2);
-
-#pragma omp parallel for private(x, y, sum2) reduction(+: sum1) 
+	omp_set_nested(1);
+//#pragma omp parallel for private(x, y, sum2) reduction(+: sum1) 
 	for (i = 1; i <= n; i++)
 	{
+		sum2 = 0;
 		x_i = a1 + h1 * (i - 1);
 		x = (x_i * 2 + h1) / 2;
 		//#pragma omp parallel for private(y) reduction(+: sum2)
@@ -29,7 +31,6 @@ void integral(const double a1, const double b1, const double a2, const double b2
 			sum2 += h1 * h2 * (exp(sin(PI * x) * cos(PI * y)) + 1) / precalc;
 		}
 		sum1 += sum2;
-		sum2 = 0;
 	}
 	*res = sum1;
 }
@@ -60,7 +61,7 @@ int main()
 					 // реализации алгоритма
 	double avg_time; // среднее время работы
 					 // реализации алгоритма
-	int numbExp = 10; // количество запусков программы
+	int numbExp = 2; // количество запусков программы
 
 	min_time = max_time = avg_time = experiment(&res);
 	// оставшиеся запуски
@@ -76,5 +77,6 @@ int main()
 		min_time << "; " << max_time << endl;
 	cout.precision(8);
 	cout << "integral value : " << res << endl;
+	cin >> i;
 	return 0;
 }
