@@ -197,4 +197,7 @@ int main() {
 	ProcessTermination(pMatrix, pVector, pResult);
 	scanf_s("%d", &Size);
 	return 0;
-}// variant 3
+}
+
+
+// variant 3

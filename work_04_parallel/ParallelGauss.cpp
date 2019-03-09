@@ -49,8 +49,7 @@ int ParallelFindPivotRow(double* pMatrix, int Size, int Iter) {
 				ThreadPivotRow.MaxValue = fabs(pMatrix[i*Size + Iter]);
 			}
 		}
-		printf("\n Local thread (id = %i) pivot row : %i ",
-			omp_get_thread_num(), ThreadPivotRow.PivotRow);
+		//printf("\n Local thread (id = %i) pivot row : %i ", omp_get_thread_num(), ThreadPivotRow.PivotRow);
 #pragma omp critical
 		{
 			if (ThreadPivotRow.MaxValue > MaxValue) {
@@ -146,6 +145,16 @@ void RandomDataInitialization(double* pMatrix, double* pVector,
 	}
 }
 
+void MyDataInitialization(double* &pMatrix, double* &pVector, int Size) {
+	pVector = new double[Size] { 14, 18, 32, 16, 11 };
+	pMatrix = new double[Size * Size] 
+	  { 6, 6, 5, 18, 20,
+		10, 9, 7, 24, 30,
+		12, 12, 13, 27, 35,
+		8, 6, 6, 15, 20,
+		4, 5, 4, 15, 15};
+}
+
 // Function for memory allocation and definition of the objects elements 
 void ProcessInitialization(double* &pMatrix, double* &pVector, double* &pResult, int &Size) {
 	// Setting the size of the matrix and the vector
@@ -161,7 +170,12 @@ void ProcessInitialization(double* &pMatrix, double* &pVector, double* &pResult,
 	pVector = new double[Size];
 	pResult = new double[Size];
 	// Initialization of the matrix and the vector elements
-	DummyDataInitialization(pMatrix, pVector, Size);
+
+	// For work_04
+	// DummyDataInitialization(pMatrix, pVector, Size);
+
+	// For work_05
+	MyDataInitialization(pMatrix, pVector, Size);
 	//RandomDataInitialization(pMatrix, pVector, Size);
 }
 
@@ -213,10 +227,10 @@ void TestResult(double* pMatrix, double* pVector,
 		equal = 1;
 	}
 	if (equal == 1)
-		printf("The result of the parallel Gauss algorithm is NOT correct."
+		printf("\nThe result of the parallel Gauss algorithm is NOT correct."
 			"Check your code.");
 	else
-		printf("The result of the parallel Gauss algorithm is correct.");
+		printf("\nThe result of the parallel Gauss algorithm is correct.");
 	delete[] pRightPartVector;
 }
 
@@ -229,12 +243,12 @@ int main() {
 	// Data initialization
 	ProcessInitialization(pMatrix, pVector, pResult, Size);
 	// The matrix and the vector output
-	/*
+	
 	printf("Initial Matrix \n");
 	PrintMatrix(pMatrix, Size, Size);
 	printf("Initial Vector \n");
 	PrintVector(pVector, Size);
-	*/
+	
 
 	start = omp_get_wtime();
 	ParallelResultCalculation(pMatrix, pVector, pResult, Size);
@@ -242,20 +256,24 @@ int main() {
 	duration = finish - start;
 
 	// The matrix and the vector output
-	/*
-	printf("Recalculated Matrix \n");
+	
+	printf("\nRecalculated Matrix \n");
 	PrintMatrix(pMatrix, Size, Size);
 	printf("Recalculated Vector \n");
 	PrintVector(pVector, Size);
 	printf("\nResult Vector \n");
 	PrintVector(pResult, Size);
-	*/
+	
 	// Testing the result
 	TestResult(pMatrix, pVector, pResult, Size);
 	// Printing the time spent by parallel Gauss algorithm
-	printf("\n Time of execution: %f\n", duration);
+	printf("\n Time of execution: %f\n", duration);
+
 	// Program termination
 	ProcessTermination(pMatrix, pVector, pResult);
 	scanf_s("%d", &Size);
 	return 0;
-}// variant 3
+}
+
+
+// variant 3
