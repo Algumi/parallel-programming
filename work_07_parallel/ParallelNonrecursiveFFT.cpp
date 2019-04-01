@@ -83,6 +83,27 @@ void BitReversing(complex<double> *inputSignal, complex<double> *outputSignal, i
 	}
 }
 
+void ParallelBitReversing(complex<double> *inputSignal, complex<double> *outputSignal, int size) {
+	int bitsCount = 0;
+	//bitsCount = log2(size)
+	for (int tmp_size = size; tmp_size > 1; tmp_size /= 2, bitsCount++);
+	//ind -index in input array
+	//revInd -correspondent to ind index in output array
+#pragma omp parallel for 
+	for (int ind = 0; ind < size; ind++)
+	{
+		int mask= 1 << (bitsCount -1);
+		int revInd = 0;
+		for (int i = 0; i < bitsCount; i++) //bit-reversing
+		{
+			bool val = ind & mask;
+			revInd |= val << i;
+			mask = mask >> 1;
+		}
+		outputSignal[revInd] = inputSignal[ind];
+	}
+}
+
 __inline void Butterfly(complex<double> *signal, complex<double> u, int offset, int butterflySize)
 {
 	complex<double> tem = signal[offset + butterflySize] * u;
@@ -114,7 +135,7 @@ void ParallelFFTCalculation(complex<double> *signal, int size)
 		int butterflySize = butterflyOffset >> 1;
 		double coeff = PI / butterflySize;
 		int i, j;
-#pragma omp parallel for private(i, j) schedule(dynamic, 12)
+#pragma omp parallel for private(j) schedule(dynamic, 12)
 		for (i = 0; i < size / butterflyOffset; i++)
 			for (j = 0; j < butterflySize; j++)
 				Butterfly(signal, complex<double>(cos(-j * coeff),
@@ -131,7 +152,8 @@ void SerialFFT(complex<double> *inputSignal, complex<double> *outputSignal, int 
 
 void ParallelFFT(complex<double> *inputSignal, complex<double> *outputSignal, int size) 
 {
-	BitReversing(inputSignal, outputSignal, size);
+	ParallelBitReversing(inputSignal, outputSignal, size);
+	//BitReversing(inputSignal, outputSignal, size);
 	ParallelFFTCalculation(outputSignal, size);
 }
 
