@@ -25,6 +25,13 @@ void DummyDataInitialization(complex<double>* mas, int size)
 	mas[size - size / 4] = 1;
 }
 
+//Function for custom initialization of input signal elements
+void MyDataInitialization(complex<double>* mas, int size)
+{
+	for (int i = 0; i < size; i++)
+		mas[i] = PI / 2. - PI * ((double)i / (double)size);
+}
+
 //Function for memory allocation and data initialization
 void ProcessInitialization(complex<double>* &inputSignal, complex<double>* &outputSignal, int &size)
 {// Setting the size of signals 
@@ -54,7 +61,8 @@ void ProcessInitialization(complex<double>* &inputSignal, complex<double>* &outp
 	outputSignal = new complex<double>[size];
 	//Initialization of input signal elements-tests
 	//DummyDataInitialization(inputSignal, size);
-	RandomDataInitialization(inputSignal, size);
+	//RandomDataInitialization(inputSignal, size);
+	MyDataInitialization(inputSignal, size);
 	//Computationalexperiments
 	//RandomDataInitialization(inputSignal, size);
 }
@@ -197,9 +205,29 @@ void TestResult(complex<double> *inputSignal, complex<double> *outputSignal, int
 		equal = 1;
 	}
 	if (equal == 1)
-		printf("The  results  of  serial  and  parallel  algorithms  are  NOT identical. Check your code.");
+		printf("The  results  of  serial  and  parallel  algorithms  are  NOT identical. Check your code.\n");
 	else
-		printf("The results of serial and parallel algorithms are identical."); delete[] testSerialSignal; 
+		printf("The results of serial and parallel algorithms are identical.\n"); delete[] testSerialSignal; 
+}
+
+double f(complex<double> *signal, int size, double t) {
+	double res = signal[0].real() / 2.;
+	for (int i = 1; i < size / 2; i++) {
+		res += signal[i].real() * cos(i * 2 * PI * t)
+			+ signal[i].imag() * sin(i * 2 * PI * t);
+	}
+	return res;
+}
+
+double sum_f(double t) {
+	double eps = 1e-9, ans = 0, s = 1;
+	int k = 1;
+	while (fabs(s) >= eps){
+		s = sin(k * 2 * PI * t) / (double)k;
+		ans += s;
+		k++;
+	}
+	return ans;
 }
 
 int main() {
@@ -224,6 +252,20 @@ int main() {
 	cout << setprecision(6);
 	cout << "Execution time is " << minDuration << " s. " << endl;
 	TestResult(inputSignal, outputSignal, size);
+
+	// task9 variant 1
+	for (int i = 0; i < size; i++) {
+		outputSignal[i] = -outputSignal[i] / ((double)size / 2.);
+	}
+
+	for (int i = 1; i < size; i++) {
+		double t = (double)i / size;
+		cout << setw(15) << f(outputSignal, size, t) << " "
+			 << setw(15) << sum_f(t) << " "
+			 << setw(15) << PI / 2.0 - PI * t << endl;
+	}
+
+
 	// Result signal output
 	// PrintSignal(outputSignal, size);
 	// Computational process termination 
