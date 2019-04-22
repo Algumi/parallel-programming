@@ -7,52 +7,33 @@ using namespace std;
 
 int NProc, ProcId;
 
-void integral_simp(const double a, const double b, const double h, double *res)
+// Число pi
+#define PI 3.1415926535897932384626433832795
+
+void integral(const double a1, const double b1, const double a2, const double b2, const double h1, const double h2, double *res) 
 {
-	long long i, n;
+	long long i, j, n, m;
 	double sum1, sum2; // локальная переменная для подсчета интеграла
-	double x; // координата точки сетки
-	n = (long long)((b - a) / 2 / h); // количество точек сетки интегрирования
+	double x, y; // координата точки сетки
+	n = (long long)((b1 - a1) / h1); // количество точек сетки интегрирования по X
+	m = (long long)((b2 - a2) / h2); // количество точек сетки интегрирования по Y
 	sum1 = 0.0;
 	sum2 = 0.0;
-
-	int oper_num = n / NProc;
-	for (i = oper_num * ProcId + 1; i <= oper_num * (ProcId + 1); i++)
-	{
-		x = a + (2 * i - 1) * h;
-		sum1 += x / (x * x * x * x + 1);
-	}
-
-	for (i = oper_num * ProcId + 1; i < oper_num * (ProcId + 1); i++)
-	{
-		x = a + 2 * i * h;
-		sum2 += x / (x * x * x * x + 1);
-	}
-	double res_sum1, res_sum2;
-	MPI_Reduce(&sum1, &res_sum1, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	MPI_Reduce(&sum2, &res_sum2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	*res = (h / 3) * (a / (a * a * a * a + 1) + (b / (b * b * b * b + 1)) + 4 * res_sum1 + 2 * res_sum2);
-
-}
-
-// integral value : 0.7853982
-void integral(const double a, const double b, const double h, double *res)
-{
-	long long i, n;
-	double sum; // локальная переменная для подсчета интеграла
-	double x; // координата точки сетки
-	n = (long long)((b - a) / h); // количество точек сетки интегрирования
-	sum = 0.0;
-	double res_buf;
-	
+	double precalc = (b1 - a1) * (b2 - a2);
 	int oper_num = n / NProc;
 	for (i = oper_num * ProcId; i < oper_num * (ProcId + 1); i++)
 	{
-		x = a + i * h + h / 2.0;
-		sum += x / (x * x * x * x + 1) * h;
+		sum2 = 0;
+		for (j = 0; j < m; j++)
+		{
+			x = a1 + i * h1 + h1 / 2;
+			y = a2 + j * h2 + h2 / 2;
+			sum2 += h1 * h2 * (exp(sin(PI * x) * cos(PI * y)) + 1) / precalc;
+		}
+		sum1 += sum2;
 	}
-	
-	MPI_Reduce(&sum, res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	MPI_Reduce(&sum1, res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
 // Число pi
@@ -60,11 +41,14 @@ void integral(const double a, const double b, const double h, double *res)
 double experiment(double *res)
 {
 	double stime, ftime; // время начала и конца расчета
-	double a = 0.0; // левая граница интегрирования
-	double b = 10e4; // правая граница интегрирования
-	double h = 0.001; // шаг интегрирования
+	double a1 = 0.0; // левая граница интегрирования первого
+	double b1 = 16.0; // правая граница интегрирования
+	double a2 = 0.0; // левая граница интегрирования
+	double b2 = 16.0; // правая граница интегрирования
+	double h1 = 0.001; // шаг интегрирования
+	double h2 = 0.001; // шаг интегрирования
 	stime = clock();
-	integral_simp(a, b, h, res); // вызов функции интегрирования
+	integral(a1, b1, a2, b2, h1, h2, res); // вызов функции интегрирования
 	ftime = clock();
 	return (ftime - stime) / CLOCKS_PER_SEC;
 }
@@ -83,7 +67,7 @@ int main()
 					 // реализации алгоритма
 	double avg_time; // среднее время работы
 					 // реализации алгоритма
-	int numbExp = 10; // количество запусков программы
+	int numbExp = 1; // количество запусков программы
 
 	min_time = max_time = avg_time = experiment(&res);
 	// оставшиеся запуски
@@ -94,7 +78,7 @@ int main()
 		if (max_time < time) max_time = time;
 		if (min_time > time) min_time = time;
 	}
-	
+
 	if (ProcId == 0) {
 		// вывод результатов эксперимента
 		cout << "execution time : " << avg_time / numbExp << "; " <<
