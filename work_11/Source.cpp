@@ -36,6 +36,32 @@ void integral(const double a1, const double b1, const double a2, const double b2
 	MPI_Reduce(&sum1, res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
+void integral_work_12(const double a1, const double b1, const double a2, const double b2, const double h1, const double h2, double *res)
+{
+	long long i, j, n, m;
+	double sum1 = 0.0, sum2 = 0.0; // локальная переменная для подсчета интеграла
+	double x, y, x_i = 0, y_j; // координата точки сетки
+	n = (long long)((b1 - a1) / h1); // количество точек сетки интегрирования по X
+	m = (long long)((b2 - a2) / h2); // количество точек сетки интегрирования по Y
+	double precalc = (b1 - a1) * (b2 - a2);
+
+	int oper_num = n / NProc;
+	for (i = oper_num * ProcId + 1; i <= oper_num * (ProcId + 1); i++)
+	{
+		x_i = a1 + h1 * (i - 1);
+		x = (x_i * 2 + h1) / 2;
+		sum2 = 0;
+		for (j = 1; j <= m; j++)
+		{
+			y_j = a2 + h2 * (j - 1);
+			y = (y_j * 2 + h2) / 2;
+			sum2 += h1 * h2 * (exp(sin(PI * x) * cos(PI * y)) + 1) / precalc;
+		}
+		sum1 += sum2;
+	}
+	MPI_Reduce(&sum1, res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+}
+
 // Число pi
 #define PI 3.1415926535897932384626433832795
 double experiment(double *res)
@@ -45,10 +71,10 @@ double experiment(double *res)
 	double b1 = 16.0; // правая граница интегрирования
 	double a2 = 0.0; // левая граница интегрирования
 	double b2 = 16.0; // правая граница интегрирования
-	double h1 = 0.001; // шаг интегрирования
-	double h2 = 0.001; // шаг интегрирования
+	double h1 = 0.01; // шаг интегрирования
+	double h2 = 0.01; // шаг интегрирования
 	stime = clock();
-	integral(a1, b1, a2, b2, h1, h2, res); // вызов функции интегрирования
+	integral_work_12(a1, b1, a2, b2, h1, h2, res); // вызов функции интегрирования
 	ftime = clock();
 	return (ftime - stime) / CLOCKS_PER_SEC;
 }
@@ -67,7 +93,7 @@ int main()
 					 // реализации алгоритма
 	double avg_time; // среднее время работы
 					 // реализации алгоритма
-	int numbExp = 1; // количество запусков программы
+	int numbExp = 10; // количество запусков программы
 
 	min_time = max_time = avg_time = experiment(&res);
 	// оставшиеся запуски
